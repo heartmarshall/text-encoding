@@ -16,7 +16,7 @@ class Encoder(ABC):
 
     @abstractmethod
     def refresh(self):
-        """Resets the encoder state"""
+        """Resets the encoder's state, clearing the encoded text and resetting position."""
         pass
 
     @abstractmethod
