@@ -1,39 +1,45 @@
-from encoder import Encoder, EncodeStepResult
+from encoder.encoder import SimpleEncoder, EncodeStepResult
 
-class RLEEncoder(Encoder):
-    def __init__(self, source_text: str):
-        super().__init__()
-        self.source_text = source_text
-        self.encoded_text = ""
+SINGLE_SEQUENCE = 0x00
+REPEATED_SEQUENCE = 0x80
+
+class RLEEncoder(SimpleEncoder):
+    def __init__(self, source_data: bytearray):
+        self.source_data = source_data
+        self.encoded_data = bytearray()
         self.current_position = 0
-
-    def set_source_text(self, text: str):
-        self.source_text = text
-        self.refresh()
-
-    def refresh(self):
-        self.encoded_text = ""
-        self.current_position = 0
-
-    def get_current_position(self):
-        return self.current_position
-
-    def get_processed_text(self):
-        return self.encoded_text
 
     def encode_step(self) -> EncodeStepResult:
-        if self.current_position >= len(self.source_text):
-            return EncodeStepResult("", "", True)
-        
-        current_char = self.source_text[self.current_position]
+        if self.current_position >= len(self.source_data):
+            return EncodeStepResult(bytes(), bytes(), True)
+
+        start_pos = self.current_position
+        current_byte = self.source_data[start_pos]
         count = 1
-        
-        while (self.current_position + count < len(self.source_text) and 
-               self.source_text[self.current_position + count] == current_char):
-            count += 1
-        
-        encoded_fragment = f"{count}{current_char}"
-        self.encoded_text += encoded_fragment
+        is_repeated = True
+
+        for i in range(start_pos + 1, min(start_pos + 128, len(self.source_data))):
+            if self.source_data[i] == current_byte and is_repeated:
+                count += 1
+            else:
+                if count == 1:
+                    is_repeated = False
+                break
+
+        if is_repeated:
+            length_byte = (REPEATED_SEQUENCE | (count - 2))
+            encoded_fragment = bytes([length_byte, current_byte])
+        else:
+            count = 1
+            while (self.current_position + count < len(self.source_data) and 
+                   count < 128 and
+                   (self.source_data[self.current_position + count] != 
+                    self.source_data[self.current_position + count - 1])):
+                count += 1
+            length_byte = (SINGLE_SEQUENCE | (count - 1))
+            encoded_fragment = bytes([length_byte]) + self.source_data[self.current_position:self.current_position + count]
+
+        self.encoded_data.extend(encoded_fragment)
         self.current_position += count
-        
-        return EncodeStepResult(current_char * count, encoded_fragment)
+
+        return EncodeStepResult(self.source_data[start_pos:start_pos + count], encoded_fragment, self.current_position >= len(self.source_data))

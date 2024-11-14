@@ -37,10 +37,13 @@ class Encoder(ABC):
         pass
 
     @abstractmethod
-    def get_processed_text(self):
+    def get_encoded_text(self):
         """Returns the processed (encoded) text"""
         pass
 
+    @abstractmethod
+    def get_encoded_text(self):
+        pass
 
 class SimpleEncoder(Encoder):
     def __init__(self, source_text: str):
@@ -51,6 +54,7 @@ class SimpleEncoder(Encoder):
 
     def set_source_text(self, text: str):
         self.source_text = text
+        self.refresh()
 
     def refresh(self):
         self.encoded_text = ""
@@ -59,9 +63,9 @@ class SimpleEncoder(Encoder):
     def get_current_position(self):
         return self.current_position
 
-    def get_processed_text(self):
+    def get_encoded_text(self):
         return self.encoded_text
-
+        
     def encode_step(self):
         if self.current_position >= len(self.source_text):
             return EncodeStepResult("", "", True)

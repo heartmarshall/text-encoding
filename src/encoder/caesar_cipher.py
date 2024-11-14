@@ -1,5 +1,4 @@
-from encoder import SimpleEncoder, EncodeStepResult
-
+from encoder.encoder import SimpleEncoder, EncodeStepResult
 
 class CaesarEncoder(SimpleEncoder):
     def __init__(self, source_text: str, shift: int = 3):
